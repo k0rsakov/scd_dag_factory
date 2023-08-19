@@ -295,5 +295,14 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  test_db:
+    image: postgres
+    ports:
+      - "1:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+
 volumes:
   postgres-db-volume:
