@@ -10,7 +10,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 # Конфигурация DAG
-OWNER = 'i.korsakov'
+OWNER = 'korsak0v'
 DAG_ID = 'check_pg'
 LOCAL_TZ = pendulum.timezone('Europe/Moscow')
 
