@@ -11,14 +11,14 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 # Конфигурация DAG
 OWNER = 'i.korsakov'
-DAG_ID = 'test_templates'
+DAG_ID = 'check_pg'
 LOCAL_TZ = pendulum.timezone('Europe/Moscow')
 
 # Описание возможных ключей для default_args
 # https://github.com/apache/airflow/blob/343d38af380afad2b202838317a47a7b1687f14f/airflow/example_dags/tutorial.py#L39
 args = {
     'owner': OWNER,
-    'start_date': datetime(2023, 1, 20, tzinfo=LOCAL_TZ),
+    'start_date': datetime(2023, 1, 1, tzinfo=LOCAL_TZ),
     'catchup': True,
     'retries': 3,
     'retry_delay': timedelta(hours=1),
@@ -29,15 +29,16 @@ def check_pg_connect(**context):
     """"""
     pg = PostgresHook('test_db')
 
-    df = pg.get_pandas_df('select * from test')
+    df = pg.get_pandas_df('SELECT 1 AS one')
 
-    print(df)
+    if len(df) == 1:
+        print(True)
 
 with DAG(
         dag_id=DAG_ID,
         schedule_interval='10 0 * * *',
         default_args=args,
-        tags=['templates', 'test'],
+        tags=['check_pg_connect', 'test'],
         concurrency=1,
         max_active_tasks=1,
         max_active_runs=1,
