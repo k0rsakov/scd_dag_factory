@@ -43,14 +43,14 @@ def gen_insert_sql_for_kpi_id(dict_kpi: dict = None) -> str:
                 table_name = '{TABLE}'
                 AND column_name NOT IN (
                     'id', 'created_at', 'changed_at', 'is_actual', 
-                    {', '.join(f"'{i}'" for i in dict_kpi.keys())}
+                    {', '.join(f"'{i}'" for i in dict_kpi)}
                 )
         '''
 
-        df = pg.execute_to_df(query)
+        df = pg.execute_to_df(query)  # noqa: PD901
 
         insert_sql_column_current = ', '.join(value for value in df.column_name)
-        insert_sql_column_modified = insert_sql_column_current + f''', {', '.join(i for i in dict_kpi.keys())}'''
+        insert_sql_column_modified = insert_sql_column_current + f''', {', '.join(i for i in dict_kpi)}'''
 
         list_values = []
 
@@ -81,7 +81,7 @@ def gen_insert_sql_for_kpi_id(dict_kpi: dict = None) -> str:
         '''
     else:
         # Если нет такого kpi_id в таблице, то генерируем вставку значений из словаря
-        columns = ', '.join(value for value in dict_kpi.keys())
+        columns = ', '.join(value for value in dict_kpi)
 
         list_values = []
 
@@ -145,7 +145,7 @@ def scd_dim_kpi(dict_kpi: dict = None) -> None:
     # Собираем SQL-скрипт из разных кусков, чтобы он прошел в одной транзакции
     sql_query = update_changed_at_for_kpi_id + insert_new_values_for_kpi_id + update_is_actual_for_kpi_id
 
-    print(sql_query)
+    print(sql_query)  # noqa: T201
     pg.execute_script(sql_query)
 
 
