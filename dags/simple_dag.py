@@ -4,23 +4,10 @@ import pendulum
 
 from airflow import DAG
 
-# from airflow.models import Variable
-
-# from airflow.utils.task_group import TaskGroup
-
 # from airflow.sensors.external_task import ExternalTaskSensor
 
-# from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import PythonOperator
-# from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-# from airflow_clickhouse_plugin.operators.clickhouse_operator import ClickHouseOperator
-
-# from airflow.hooks.base import BaseHook
-# from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-# from airflow_clickhouse_plugin.hooks.clickhouse_hook import ClickHouseHook
 
 
 # Конфигурация DAG
@@ -33,10 +20,17 @@ PG_CONNECT = 'test_db'
 
 # Используемые таблицы в DAG
 PG_TARGET_SCHEMA = 'dm'
-PG_TARGET_TABLE = 'fct_'
+PG_TARGET_TABLE = 'fct_sales'
+PG_TMP_SCHEMA = 'stg'
+PG_TMP_TABLE = f'tmp_{PG_TARGET_TABLE}_{{{{ data_interval_start.format("YYYY_MM_DD") }}}}'
 INDEX_KPI = 1
 
-sql_query = 'SELECT 1 AS one'
+sql_query = '''
+SELECT 
+	('2023-'||((random()*11+1)::int)::varchar||'-'||((random()*27+1)::int)::varchar)::date AS date,
+	(random()*100)::int AS value,
+	1 AS kpi_id
+'''
 
 LONG_DESCRIPTION = '# LONG_DESCRIPTION'
 
@@ -55,7 +49,7 @@ with DAG(
         dag_id=DAG_ID,
         schedule_interval='10 0 * * *',
         default_args=args,
-        tags=['check_pg_connect', 'test'],
+        tags=['dm'],
         description=SHORT_DESCRIPTION,
         concurrency=1,
         max_active_tasks=1,
@@ -69,15 +63,20 @@ with DAG(
 
     drop_tmp_before = PostgresOperator(
         task_id='drop_tmp_before',
-        sql=f'''DROP TABLE IF EXISTS stg.tmp_{PG_TARGET_TABLE}''',
+        sql=f'''DROP TABLE IF EXISTS {PG_TMP_SCHEMA}.{PG_TMP_TABLE}''',
         postgres_conn_id=PG_CONNECT
     )
 
     create_tmp = PostgresOperator(
         task_id='create_tmp',
         sql=f'''
-        CREATE TABLE stg.tmp_{PG_TARGET_TABLE} AS
-        {sql_query};
+        CREATE TABLE {PG_TMP_SCHEMA}.{PG_TMP_TABLE} AS
+        {
+            sql_query.format(
+                start_date="{{ data_interval_start.format('YYYY-MM-DD') }}",
+                end_date="{{ data_interval_end.format('YYYY-MM-DD') }}"
+            )
+        };
         ''',
         postgres_conn_id=PG_CONNECT
     )
@@ -91,11 +90,8 @@ with DAG(
                 SELECT 
                     date 
                 FROM 
-                    stg.tmp_{PG_TARGET_TABLE}
-                WHERE
-                    "index" = {INDEX_KPI}
+                    {PG_TMP_SCHEMA}.{PG_TMP_TABLE}
                 )
-        AND "index" = {INDEX_KPI}
         ''',
         postgres_conn_id=PG_CONNECT
     )
@@ -103,20 +99,20 @@ with DAG(
     insert_from_tmp_to_target = PostgresOperator(
         task_id='insert_from_tmp_to_target',
         sql=f'''
-        INSERT INTO TARGET TABLE {PG_TARGET_SCHEMA}.{PG_TARGET_TABLE}("date", value, "index")
+        INSERT INTO {PG_TARGET_SCHEMA}.{PG_TARGET_TABLE}("date", value, kpi_id)
         SELECT 
             "date", 
-            value, 
-            "index" 
+            value,
+            kpi_id
         FROM 
-            stg.tmp_{PG_TARGET_TABLE}
+            {PG_TMP_SCHEMA}.{PG_TMP_TABLE}
         ''',
         postgres_conn_id=PG_CONNECT
     )
 
     drop_tmp_after = PostgresOperator(
         task_id='drop_tmp_after',
-        sql=f'''DROP TABLE IF EXISTS stg.tmp_{PG_TARGET_TABLE}''',
+        sql=f'''DROP TABLE IF EXISTS {PG_TMP_SCHEMA}.{PG_TMP_TABLE}''',
         postgres_conn_id=PG_CONNECT
     )
 
