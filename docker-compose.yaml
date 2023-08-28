@@ -297,6 +297,7 @@ services:
 
   test_db:
     image: postgres
+    restart: always
     ports:
       - "1:5432"
     environment:
