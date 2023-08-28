@@ -64,6 +64,9 @@ def create_kpi_of_dag(
     # Названия коннекторов к GP
     pg_connect = 'test_db' if pg_environment == 'dev' else 'test_db_prod'
 
+    # Сделана заглушка атрибута. Это можно использовать для указания разных сценариев в зависимости от окружения
+    airflow_environment = airflow_environment
+
     # Дата приходит в формате str и после парсинга, мы можем получить дату и любые элементы даты
     parse_date = pendulum.parse(start_date)
 
@@ -81,7 +84,7 @@ def create_kpi_of_dag(
     tags_ = []
 
     for i in raw_tags:
-        tags_.append(
+        tags_.append(  # noqa: PERF401
             i.replace("'", "")
             .replace(" ", '')
             .replace("[", "")
@@ -93,8 +96,11 @@ def create_kpi_of_dag(
         raw_sensors = list(sensors.split(','))
         sensors_ = []
         for i in raw_sensors:
-            sensors_.append(
-                i.replace("'", "").replace(' ', '').replace("[", "").replace("]", "")
+            sensors_.append(  # noqa: PERF401
+                i.replace("'", "")
+                .replace(' ', '')
+                .replace("[", "")
+                .replace("]", "")
             )
     else:
         sensors_ = None
@@ -217,7 +223,7 @@ def generator_of_morning_kpi_dag_to_gp() -> None:
             "owner",
             sql_query,
             start_date,
-            gp_environment,
+            pg_environment,
             airflow_environment,
             short_description_md,
             long_description_md,
@@ -240,7 +246,7 @@ def generator_of_morning_kpi_dag_to_gp() -> None:
             pg_target_schema='public',
             pg_target_table='dim_kpi_dag_gen_config',
             index_kpi=df.iloc[i].kpi_id,
-            pg_environment=df.iloc[i].gp_environment,
+            pg_environment=df.iloc[i].pg_environment,
             airflow_environment=df.iloc[i].airflow_environment,
             long_description=df.iloc[i].long_description_md,
             short_description=df.iloc[i].short_description_md,
