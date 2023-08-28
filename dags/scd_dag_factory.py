@@ -62,7 +62,7 @@ def create_kpi_of_dag(
     pg_tmp_table = f'tmp_{dag_id}_{{{{ data_interval_start.format("YYYY_MM_DD") }}}}'
 
     # Названия коннекторов к GP
-    pg_connect = 'test_db' if pg_environment == 'dev' else 'test_db_prod'
+    pg_connect = 'test_db_dev' if pg_environment == 'dev' else 'test_db'
 
     # Сделана заглушка атрибута. Это можно использовать для указания разных сценариев в зависимости от окружения
     airflow_environment = airflow_environment
@@ -244,7 +244,7 @@ def generator_of_morning_kpi_dag_to_gp() -> None:
             owner=df.iloc[i].owner,
             dag_id=df.iloc[i].dag_id,
             pg_target_schema='public',
-            pg_target_table='dim_kpi_dag_gen_config',
+            pg_target_table='fct_dm_kpi',
             index_kpi=df.iloc[i].kpi_id,
             pg_environment=df.iloc[i].pg_environment,
             airflow_environment=df.iloc[i].airflow_environment,
