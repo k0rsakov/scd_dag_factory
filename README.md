@@ -1,6 +1,8 @@
-# scd_dag_factory
+# Таблица-справочник – генератор DAG? А что так можно было?
 
 Фабрика DAG через SCD-таблицу с конфигурациями.
+
+Статья на [habr](https://habr.com/ru/articles/756978/)
 
 ## Установка Airflow через Docker
 
@@ -34,3 +36,10 @@ pip install --upgrade pip
 ```bash
 pip install -r requirements.txt
 ```
+
+___
+
+Если вам необходима консультация/менторство/мок-собеседование и другие вопросы по дата-инженерии, то вы можете
+обращаться ко мне. Все контакты указаны по
+[ссылке](https://www.notion.so/korsak0v/Data-Engineer-185c62fdf79345eb9da9928356884ea0).
+
